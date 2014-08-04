@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html lang="en">
+
+<head>
+
+</head>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+<!-- validation plug-in -->
+<script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.13.0/jquery.validate.js"></script>
+ 
+
+ <link href="/stylesheets/layout.css" rel="stylesheet" type="text/css" />
+ 
+<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12 well well-small"><img src="{{ selected_site }}"></div>
+				  
+			<form role="form" id="account" name="account">
+	    
+				<div class="form-group">
+					<label for="name" class="col-md-12 control-label">User</label>
+					<div class="col-md-12">
+						<input type="text" class="form-control" id="user" name="user" placeholder="User"/>
+					</div>
+				</div>
+		
+		
+				<div class="form-group">
+					<label for="pass1" class="col-md-12 control-label">Password</label>
+					<div class="col-md-12">
+						<input type="password" class="form-control" id="pass1" name="pass1" placeholder="8 or more characters, with numbers, UPPER and lower case letters and special characters">
+					</div>
+				</div>
+		
+				<div class="form-group">
+					<label for="pass2" class="col-md-12 control-label">Confirm Password</label>
+					<div class="col-md-12">
+						<input type="password" class="form-control" id="pass2" name="pass2" placeholder="Re-type the password">
+					</div>
+				</div>
+		
+				<div class="form-group">
+					<div class="clearfix col-md-12">
+						<button id="submit" class="btn btn-primary btn-larg btn-block">Save and continue</button>
+					</div>
+				</div>
+		
+				<input type="hidden" name="site" value="{{ selected_site }}"/>
+		
+			</form>
+	
+		</div>
+	</div>
+</div>
+</body>
+  
+<script>
+	$.validator.addMethod("password", function(value,element) {
+    	var long = /^[\S]{8,}$/;
+    	var number = /\d+/;
+		var upper = /[A-Z]+/;
+		var lower = /[a-z]+/;
+		return long.test(value) && number.test(value) && upper.test(value) & lower.test(value);
+	}, "The password must be at least 8 characters long, with a number, UPPER and lower case characters.");
+	
+	$("#account").validate({
+		rules:{
+			user: "required",
+			pass1: "required",
+			pass1: { password: true },
+			pass2: { equalTo: "#pass1" },
+		},
+		messages:{
+			pass2: "Please ensure that both passwords are the same"
+		}
+	}); 
+	  
+	$("button#submit").click(function(){
+		var form=$("#account");
+		form.validate();
+		$("#pass1-error").addClass("bg-danger");
+		if ( form.valid()){
+			$.ajax({
+				type: "POST",
+				url: "/save",
+				data: $("#account").serialize(),
+			});
+		} else {
+		}
+});
+  
+</script>
+	 
+</html>
+{% endautoescape %}
