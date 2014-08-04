@@ -35,12 +35,6 @@ main_template=JINJA_ENVIRONMENT.get_template('index.html')
 report_template=JINJA_ENVIRONMENT.get_template('report.html')
 account_template=JINJA_ENVIRONMENT.get_template('account.html')
 
-def getPossibleSites():
-	"""Returns a set of sites available for account creation. Each site 
-	is represented by an image in the 'images' directory. """
-	files=set(glob.glob('images/*'))
-	return files
-	
 class Account(db.Model):
 	date = db.DateTimeProperty(auto_now_add=True)
 	user = db.StringProperty(indexed=True)
@@ -50,7 +44,29 @@ class Account(db.Model):
 	third_password = db.StringProperty()
 	pass
 	
-def getRegisteredSites(user):
+def get_all_accounts():
+	"""Returns all stored accounts as a list of lists."""	
+	accounts=[]
+	q = Account.all()
+	q.order('-date')
+	accounts.append(['date','user','1st pwd','2nd pwd','3 pwd'])
+	for account in q:
+		entry=[]
+		entry.append(account.date)
+		entry.append(account.user)
+		entry.append(account.initial_password)
+		entry.append(account.second_password)
+		entry.append(account.third_password)
+		accounts.append(entry)
+	return accounts
+	
+def get_possible_sites():
+	"""Returns a set of sites available for account creation. Each site 
+	is represented by an image in the 'images' directory. """
+	files=set(glob.glob('images/*'))
+	return files
+	
+def get_registered_sites(user):
 	"""Returns a set of the sites the specified user has registered for."""
 	sites=set()
 	q=Account.all()
@@ -66,17 +82,20 @@ class MainHandler(webapp2.RequestHandler):
 
 class ReportHandler(webapp2.RequestHandler):
 	def get(self):
-		self.response.write('Report')
+		template_values = {
+			'accounts' : get_all_accounts(),
+		}
+		self.response.write(report_template.render(template_values))
 		pass
 		
 class AccountHandler(webapp2.RequestHandler):
 	def get(self):
 		user=cgi.escape(self.request.get('user'))
-		possible_sites=getPossibleSites()
+		possible_sites=get_possible_sites()
 		try:
 			if user:
 				last_site=memcache.get(user)
-				registered_sites=getRegisteredSites(user)
+				registered_sites=get_registered_sites(user)
 				registered_sites.add(last_site)
 				allowed_sites=possible_sites.difference(registered_sites)
 				print registered_sites
