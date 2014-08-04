@@ -79,7 +79,9 @@ class AccountHandler(webapp2.RequestHandler):
 				registered_sites=getRegisteredSites(user)
 				registered_sites.add(last_site)
 				allowed_sites=possible_sites.difference(registered_sites)
-				print allowed_sites
+				print registered_sites
+				if len(allowed_sites)==0:
+					self.redirect('/')
 				site=random.sample(allowed_sites, 1)
 			else:
 				site=random.sample(possible_sites,1)
@@ -104,7 +106,7 @@ class AccountHandler(webapp2.RequestHandler):
 			initial_password=password,
 			site=site
 		)
-		memcache.add(key=user, value=site)
+		memcache.set(key=user, value=site)
 		account.put()
 		new_path='/account?user='+user
 		return self.redirect(new_path)
