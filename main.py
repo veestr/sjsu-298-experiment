@@ -23,7 +23,8 @@ import json
 import cgi
 import string
 
-from google.appengine.ext import ndb
+from google.appengine.ext import db
+from google.appengine.api import memcache
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
@@ -40,23 +41,23 @@ def getPossibleSites():
 	files=set(glob.glob('images/*'))
 	return files
 	
-class Account(ndb.Model):
-	date = ndb.DateTimeProperty(auto_now_add=True)
-	user = ndb.StringProperty(indexed=True)
-	site = ndb.StringProperty()
-	initial_password = ndb.StringProperty()
-	second_password = ndb.StringProperty()
-	third_password = ndb.StringProperty()
+class Account(db.Model):
+	date = db.DateTimeProperty(auto_now_add=True)
+	user = db.StringProperty(indexed=True)
+	site = db.StringProperty()
+	initial_password = db.StringProperty()
+	second_password = db.StringProperty()
+	third_password = db.StringProperty()
 	pass
 	
-	@classmethod
-	def getRegisteredSites(cls,user):
-		"""Returns a set of the sites the specified user has registered for."""
-		sites=set()
-		qry=Account.query(Account.user==user)
-		for account in qry:
-			sites.add(account.site)
-		return sites
+def getRegisteredSites(user):
+	"""Returns a set of the sites the specified user has registered for."""
+	sites=set()
+	q=Account.all()
+	q.filter('user =',user)
+	for account in q:
+		sites.add(account.site)
+	return sites
 
 class MainHandler(webapp2.RequestHandler):
 	def get(self):
@@ -74,10 +75,11 @@ class AccountHandler(webapp2.RequestHandler):
 		possible_sites=getPossibleSites()
 		try:
 			if user:
-				#ASSERT: The user could have registered for sites in the past
-				existing_sites=Account.getRegisteredSites(user)
-				allowed_sites=possible_sites.difference(existing_sites)
-				print existing_sites
+				last_site=memcache.get(user)
+				registered_sites=getRegisteredSites(user)
+				registered_sites.add(last_site)
+				allowed_sites=possible_sites.difference(registered_sites)
+				print allowed_sites
 				site=random.sample(allowed_sites, 1)
 			else:
 				site=random.sample(possible_sites,1)
@@ -92,7 +94,7 @@ class AccountHandler(webapp2.RequestHandler):
 		pass
 	
 	def save(self):
-		"""Saves the account credentials"""
+		"""Saves the account credentials and redirects to the new account page."""
 		user=cgi.escape(self.request.get('user'))
 		password=cgi.escape(self.request.get('pass1'))
 		site=cgi.escape(self.request.get('site'))
@@ -102,8 +104,10 @@ class AccountHandler(webapp2.RequestHandler):
 			initial_password=password,
 			site=site
 		)
+		memcache.add(key=user, value=site)
 		account.put()
-		pass
+		new_path='/account?user='+user
+		return self.redirect(new_path)
 		
 class ExperimentHandler(webapp2.RequestHandler):
 	def get(self):
