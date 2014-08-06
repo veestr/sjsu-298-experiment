@@ -23,41 +23,44 @@
  <link href="/stylesheets/layout.css" rel="stylesheet" type="text/css" />
  
 <body>
+	<div class="10px-empty">&nbsp;</div>
 	<div class="container-fluid">
+		
 		<div class="row">
-			<div class="col-md-12 well well-small"><img src="{{ selected_site }}"></div>
+			<div class="col-md-12 clearfix well well-small">
+				<img src="{{ selected_site }}">
+			</div>
+		</div>
 				  
-			<form role="form" id="account" name="account" method="post" action="/save">
-	    
-				<div class="form-group">
-					<label for="name" class="col-md-12 control-label">User</label>
-					<div class="col-md-12">
-						<input type="text" class="form-control" id="user" name="user" placeholder="User" value="{{ user }}"/>
-					</div>
+		<div class="row">		  
+		<form role="form" id="account" name="account" method="post" action="/save">
+			<div class="form-group">
+				
+				<div class="col-md-12 clearfix">
+					<input type="text" class="form-control" id="user" name="user" placeholder="Username:" value="{{ user }}"/>
 				</div>
+			</div>
 		
-		
-				<div class="form-group">
-					<label for="pass1" class="col-md-12 control-label">Password</label>
-					<div class="col-md-12">
-						<input type="password" class="form-control" id="pass1" name="pass1" placeholder="8 or more characters, with numbers, UPPER and lower case letters and special characters">
+			<div class="form-group">
+				<div class="col-md-12">
+						<input type="password" class="form-control" id="pass1" name="pass1" placeholder="Password: At least 8 characters, with numbers, UPPER and lower case letters and special characters">
 					</div>
-				</div>
+			</div>
 		
-				<div class="form-group">
-					<label for="pass2" class="col-md-12 control-label">Confirm Password</label>
-					<div class="col-md-12">
-						<input type="password" class="form-control" id="pass2" name="pass2" placeholder="Re-type the password">
-					</div>
+			<div class="form-group">
+				<div class="col-md-12">
+				<input type="password" class="form-control" id="pass2" name="pass2" placeholder="Confirm password:">
 				</div>
+			</div>
 		
-				<div class="form-group">
-					<div class="clearfix col-md-12">
-						<button id="submit" class="btn btn-primary btn-larg btn-block">Save and continue</button>
-					</div>
+	
+			<div class="form-group">
+				<div class="col-md-12">
+					<button id="submit" class="btn btn-primary btn-larg btn-block">Save and continue</button>
 				</div>
+			</div>
 		
-				<input type="hidden" name="site" value="{{ selected_site }}"/>
+			<input type="hidden" name="site" value="{{ selected_site }}"/>
 		
 			</form>
 	

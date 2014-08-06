@@ -50,7 +50,7 @@ def get_all_accounts():
 	accounts=[]
 	q = Account.all()
 	q.order('-date')
-	accounts.append(['Date','User','site','1st pwd','2nd pwd','3rd pwd'])
+	accounts.append(['Date','User','Site','1st pwd','2nd pwd','3rd pwd'])
 	for account in q:
 		entry=[]
 		entry.append(account.date)
