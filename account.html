@@ -76,7 +76,8 @@
     	var number = /\d+/;
 		var upper = /[A-Z]+/;
 		var lower = /[a-z]+/;
-		return long.test(value) && number.test(value) && upper.test(value) & lower.test(value);
+		var special = /[^\w\d]+/;
+		return long.test(value) && number.test(value) && upper.test(value) & lower.test(value) & special.test(value);
 	}, "The password must be at least 8 characters long, with a number, UPPER and lower case characters.");
 	
 	$("#account").validate({
