@@ -23,6 +23,7 @@ import json
 import cgi
 import string
 import datetime
+import re
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
@@ -68,11 +69,20 @@ def get_possible_sites():
 	files=set(glob.glob('images/*'))
 	return files
 	
-def get_registered_sites(user):
-	"""Returns a set of the sites the specified user has registered for."""
+def get_registered_sites(user,iteration):
+	"""Returns a set of the sites the specified user has registered for given the 
+	specific iteration. """
 	sites=set()
 	q=Account.all()
 	q.filter('user =',user)
+	
+	if int(iteration)==1:
+		#ASSERT: Filter out the site where second_password is empty
+		q.filter('second_password !=', None)
+	elif int(iteration)==2:
+		#ASSERT: Filter out the site where third_password is empty
+		q.filter('third_password !=', None)
+
 	for account in q:
 		sites.add(account.site)
 	return sites
@@ -91,25 +101,28 @@ class ReportHandler(webapp2.RequestHandler):
 		pass
 		
 class AccountHandler(webapp2.RequestHandler):
-	def get(self):
+	
+	def get(self, iteration):
 		user=cgi.escape(self.request.get('user'))
 		possible_sites=get_possible_sites()
 		try:
 			if user:
 				last_site=memcache.get(user)
-				registered_sites=get_registered_sites(user)
+				registered_sites=get_registered_sites(user,iteration)
 				registered_sites.add(last_site)
 				allowed_sites=possible_sites.difference(registered_sites)
-				print registered_sites
 				if len(allowed_sites)==0:
 					self.redirect('/')
 				site=random.sample(allowed_sites, 1)
 			else:
 				site=random.sample(possible_sites,1)
 			
+			print site, iteration
+			
 			template_values = {
 				'selected_site' : cgi.escape(site.pop()),
-				'user': user
+				'user': user,
+				'iteration': iteration
 			}
 			self.response.write(account_template.render(template_values))
 		except ValueError:
@@ -121,27 +134,47 @@ class AccountHandler(webapp2.RequestHandler):
 		user=cgi.escape(self.request.get('user'))
 		password=cgi.escape(self.request.get('pass1'))
 		site=cgi.escape(self.request.get('site'))
+		iteration=int(cgi.escape(self.request.get('iteration')))
 		self.response.status=201
-		account=Account(
-			user=user,
-			initial_password=password,
-			site=site
-		)
-		memcache.set(key=user, value=site)
-		account.put()
-		new_path='/account?user='+user
-		return self.redirect(new_path)
 		
-class ExperimentHandler(webapp2.RequestHandler):
-	def get(self):
-		self.response.write('Experiment')
-		pass
+		if iteration==0:
+			#Assert: Storing a new account
+			account=Account(
+				user=user,
+				initial_password=password,
+				site=site
+				)
+			account.put()
+		elif iteration==1:
+			#Assert: Storing first follow-up
+			existing_accounts=db.GqlQuery("SELECT * from Account WHERE user=:1 AND site=:2", user, site).fetch(1)
+			if len(existing_accounts)==0:
+				#Assert: Something is fucked up
+				self.response.status=500
+			else:
+				account=existing_accounts[0]
+				account.second_password=password
+				account.put()
+		elif iteration==2:
+			#Assert: Storing second follow-up
+			existing_accounts=db.GqlQuery("SELECT * from Account WHERE user=:1 AND site=:2", user, site).fetch(1)
+			if len(existing_accounts)==0:
+				#Assert: Something is fucked up
+				self.response.status=500
+			else:
+				account=existing_accounts[0]
+				account.third_password=password
+				account.put()
+			pass
+			
+		memcache.set(key=user, value=site)
+		new_path='/account/'+str(iteration)+'/?user='+user
+		return self.redirect(new_path)
 		
 
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/', handler=MainHandler),
 	webapp2.Route(r'/report', handler=ReportHandler),
-	webapp2.Route(r'/account', handler=AccountHandler),
-	webapp2.Route(r'/experiment', handler=ExperimentHandler),
+	webapp2.Route(r'/account/<iteration>/', handler=AccountHandler),
 	webapp2.Route(r'/save', handler=AccountHandler, methods=['POST'], handler_method='save')
 ], debug=True)
