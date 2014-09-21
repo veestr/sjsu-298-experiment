@@ -29,21 +29,22 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 JINJA_ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
-    extensions=['jinja2.ext.autoescape'],
-    autoescape=True)
+loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+extensions=['jinja2.ext.autoescape'],
+autoescape=True)
 	
 main_template=JINJA_ENVIRONMENT.get_template('index.html')
 report_template=JINJA_ENVIRONMENT.get_template('report.html')
 account_template=JINJA_ENVIRONMENT.get_template('account.html')
+bad_password_template=JINJA_ENVIRONMENT.get_template('bad_password.html')
 
 class Account(db.Model):
 	date = db.DateTimeProperty(auto_now_add=True)
 	user = db.StringProperty(indexed=True)
 	site = db.StringProperty()
 	initial_password = db.StringProperty()
-	second_password = db.StringProperty()
-	third_password = db.StringProperty()
+	second_password = db.IntegerProperty()
+	third_password = db.IntegerProperty()
 	pass
 	
 def get_all_accounts():
@@ -51,7 +52,7 @@ def get_all_accounts():
 	accounts=[]
 	q = Account.all()
 	q.order('-date')
-	accounts.append(['Date','User','Site','1st pwd','2nd pwd','3rd pwd'])
+	accounts.append(['Date','User','Site','Original Password','5 Min ','1 Week'])
 	for account in q:
 		entry=[]
 		entry.append(account.date)
@@ -71,25 +72,39 @@ def get_possible_sites():
 	
 def get_registered_sites(user,iteration):
 	"""Returns a set of the sites the specified user has registered for given the 
-	specific iteration. """
+	specific iteration. The sites are considered to be registered if the password is set to a
+	value in ragen [0,3] for the specified iteration."""
 	sites=set()
 	q=Account.all()
 	q.filter('user =',user)
 	
 	if int(iteration)==1:
-		#ASSERT: Filter out the site where second_password is empty
-		q.filter('second_password !=', None)
-	elif int(iteration)==2:
-		#ASSERT: Filter out the site where third_password is empty
-		q.filter('third_password !=', None)
+		#ASSERT: Filter out the site where second_password has not been set
+		q.filter('second_password >=', 0).filter('second_password <=', 3)
+		
+	if int(iteration)==2:
+		#ASSERT: Filter out the site where third_password has not been set
+		q.filter('third_password >=', 0).filter('third_password <=', 3)
 
 	for account in q:
 		sites.add(account.site)
+		
 	return sites
-
+	
+def verify_site(user, site, password):
+	"""Verifies whether the password for user is correct for the specific site."""
+	q=Account.all()
+	q.filter('user =',user)
+	q.filter('site =', site)
+	result = q.get()
+	
+	stored_pass = str(result.initial_password)
+	return stored_pass == password
+	
 class MainHandler(webapp2.RequestHandler):
 	def get(self):
 		self.response.write(main_template.render())
+		memcache.flush_all()
 		pass
 
 class ReportHandler(webapp2.RequestHandler):
@@ -102,28 +117,47 @@ class ReportHandler(webapp2.RequestHandler):
 		
 class AccountHandler(webapp2.RequestHandler):
 	
-	def get(self, iteration):
+	def get(self, iteration,attempt):
 		user=cgi.escape(self.request.get('user'))
-		possible_sites=get_possible_sites()
+		site=cgi.escape(self.request.get('site'))
+		possible_sites=get_possible_sites()		
 		try:
 			if user:
-				last_site=memcache.get(user)
-				registered_sites=get_registered_sites(user,iteration)
-				registered_sites.add(last_site)
-				allowed_sites=possible_sites.difference(registered_sites)
-				if len(allowed_sites)==0:
-					self.redirect('/')
-				site=random.sample(allowed_sites, 1)
+				#ASSERT: We've seen this user before, get the list of sites
+				# that this user may need to setup
+				if site:
+					#ASSESRT: We know for which site to display the account info
+					selected_site = site
+				else:
+					#ASSERT: We must choose the site
+					last_site=memcache.get(user)
+					registered_sites=get_registered_sites(user,iteration)
+					registered_sites.add(last_site)
+					allowed_sites=possible_sites.difference(registered_sites)
+					if len(allowed_sites)==0:
+						self.redirect('/')
+					selected_site=random.sample(allowed_sites, 1).pop()
 			else:
-				site=random.sample(possible_sites,1)
+				#ASSERT: We have not seen this user before. Provide a list
+				# of sites without any restrictions
+				selected_site=random.sample(possible_sites,1).pop()
 			
-			print site, iteration
+			if int(iteration)==1 or int(iteration)==2:
+				# ASSERT: The user is going to verify the site's credentials
+				# thus, we need a different verification procedure
+				action="/verify"
+			elif int(iteration)==0:
+				#ASSERT: This is the user's first time, so we need to save the info
+				action="/save"
 			
 			template_values = {
-				'selected_site' : cgi.escape(site.pop()),
+				'selected_site' : cgi.escape(selected_site),
 				'user': user,
-				'iteration': iteration
+				'iteration': iteration,
+				'attempt': attempt,
+				'action': action,
 			}
+			
 			self.response.write(account_template.render(template_values))
 		except ValueError:
 				self.response.write(main_template.render())
@@ -136,45 +170,76 @@ class AccountHandler(webapp2.RequestHandler):
 		site=cgi.escape(self.request.get('site'))
 		iteration=int(cgi.escape(self.request.get('iteration')))
 		self.response.status=201
-		
-		if iteration==0:
-			#Assert: Storing a new account
-			account=Account(
-				user=user,
-				initial_password=password,
-				site=site
-				)
-			account.put()
-		elif iteration==1:
-			#Assert: Storing first follow-up
-			existing_accounts=db.GqlQuery("SELECT * from Account WHERE user=:1 AND site=:2", user, site).fetch(1)
-			if len(existing_accounts)==0:
-				#Assert: Something is fucked up
-				self.response.status=500
-			else:
-				account=existing_accounts[0]
-				account.second_password=password
-				account.put()
-		elif iteration==2:
-			#Assert: Storing second follow-up
-			existing_accounts=db.GqlQuery("SELECT * from Account WHERE user=:1 AND site=:2", user, site).fetch(1)
-			if len(existing_accounts)==0:
-				#Assert: Something is fucked up
-				self.response.status=500
-			else:
-				account=existing_accounts[0]
-				account.third_password=password
-				account.put()
-			pass
-			
+		account=Account(
+			user=user,
+			initial_password=password,
+			site=site,
+			second_password=-1,
+			third_password=-1,	
+			)
+		account.put()	
 		memcache.set(key=user, value=site)
-		new_path='/account/'+str(iteration)+'/?user='+user
+		new_path='/account/0/1/?user='+user
 		return self.redirect(new_path)
 		
+	def verify(self):
+		"""Verifies the credentials for the site."""
+		user=cgi.escape(self.request.get('user'))
+		password=cgi.escape(self.request.get('pass1'))
+		site=cgi.escape(self.request.get('site'))
+		iteration=int(cgi.escape(self.request.get('iteration')))
+		attempt=int(cgi.escape(self.request.get('attempt')))
+		is_pass_valid=verify_site(user,site, password)
+		
+		existing_accounts=db.GqlQuery("SELECT * from Account WHERE user=:1 AND site=:2",user,site).fetch(1)
+		account=existing_accounts[0]
+		
+		if is_pass_valid:
+			#ASSERT: The password provided by user for the site is valid
+			#Mark the attempt as such and go on to the next site
+			if iteration==1:
+				account.second_password=attempt
+			if iteration==2:
+				account.third_password=attempt
+				
+			new_path = '/account/'+str(iteration)+'/1/?user='+user
+			memcache.set(key=user, value=site)
+			account.put()
+			return self.redirect(new_path)
+		
+		else:
+			
+			if attempt < 3:
+				#ASSERT: The pass is not valid, redirect to the next attempt for this site	
+				next_attempt=attempt+1
+				new_path = '/account/'+str(iteration)+'/'+str(next_attempt)+'/?user='+user+'&site='+site
+				msg = "Your password did not match the one you've created for this site. " 	
+			if attempt >= 3:
+				#ASSERT: The pass is not valid for this site and we do not have any more attempts left
+				#redirect to the next site within the same iteration
+				if iteration==1:
+					account.second_password=0
+				if iteration==2:
+					account.third_password=0
+					
+				new_path = '/account/'+str(iteration)+'/1/?user='+user
+				memcache.set(key=user, value=site)
+				account.put()
+				msg = "You have exhausted all attemps. Re-directing to the next site or the main menu if no sites are available. "
+			
+			template_values = {
+				'attempts_left' : 3-attempt,
+				'target_url': new_path,
+				'message': msg,
+			}
+			self.response.write(bad_password_template.render(template_values))
+
+		pass
 
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/', handler=MainHandler),
 	webapp2.Route(r'/report', handler=ReportHandler),
-	webapp2.Route(r'/account/<iteration>/', handler=AccountHandler),
-	webapp2.Route(r'/save', handler=AccountHandler, methods=['POST'], handler_method='save')
+	webapp2.Route(r'/account/<iteration>/<attempt>/', handler=AccountHandler),
+	webapp2.Route(r'/save',   handler=AccountHandler, methods=['POST'], handler_method='save'),
+	webapp2.Route(r'/verify', handler=AccountHandler, methods=['POST'], handler_method='verify')
 ], debug=True)

@@ -33,7 +33,7 @@
 		</div>
 				  
 		<div class="row">		  
-		<form role="form" id="account" name="account" method="post" action="/save">
+		<form role="form" id="account" name="account" method="post" action="{{ action }}">
 			<div class="form-group">
 				
 				<div class="col-md-12 clearfix">
@@ -43,7 +43,7 @@
 		
 			<div class="form-group">
 				<div class="col-md-12">
-						<input type="password" class="form-control" id="pass1" name="pass1" placeholder="Password: At least 8 characters, with numbers, UPPER and lower case letters and special characters">
+						<input type="password" class="form-control" id="pass1" name="pass1" placeholder="Password: 8+ characters with numbers, upper and lower case letters, special characters">
 					</div>
 			</div>
 		
@@ -62,35 +62,45 @@
 		
 			<input type="hidden" name="site" value="{{ selected_site }}"/>
 			<input type="hidden" name="iteration" value="{{ iteration }}">
-		
+			<input type="hidden" name="attempt" value="{{ attempt }}">
 			</form>
-	
+			
 		</div>
 	</div>
 </div>
 </body>
   
 <script>
+
+	/* Ensures that the password matches the password criteria */
 	$.validator.addMethod("password", function(value,element) {
-    	var long = /^[\S]{8,}$/;
-    	var number = /\d+/;
+		var long = /^[\S]{8,}$/;
+		var number = /\d+/;
 		var upper = /[A-Z]+/;
 		var lower = /[a-z]+/;
 		var special = /[^\w\d]+/;
-		return long.test(value) && number.test(value) && upper.test(value) & lower.test(value) & special.test(value);
-	}, "The password must be at least 8 characters long, with a number, UPPER and lower case characters.");
+		return long.test(value) && number.test(value) && upper.test(value) && lower.test(value) && special.test(value);
+	}, "The password must be 8+ characters with numbers, upper and lower case letters, special characters.");
 	
-	$("#account").validate({
-		rules:{
-			user: "required",
-			pass1: "required",
-			pass1: { password: true },
-			pass2: { equalTo: "#pass1" },
-		},
-		messages:{
-			pass2: "Please ensure that both passwords are the same"
-		}
-	}); 
+	$(function() {
+		
+		var checkStoredPassword = function(){
+			
+		};
+		
+		$("#account").validate({
+			rules:{
+				user: "required",
+				pass1: "required",
+				pass1: { password: true },
+				pass2: { equalTo: "#pass1" },
+				pass2: { depends: checkStoredPassword},
+			},
+			messages:{
+				pass2: "Please ensure that both passwords are the same"
+			}
+		}); 
+	});
   
 </script>
 	 
