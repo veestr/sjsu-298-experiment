@@ -87,11 +87,16 @@ def get_all_accounts():
 		accounts.append(entry)
 	return accounts
 	
-def get_possible_sites():
-	"""Returns a set of sites available for account creation. Each site 
+def get_possible_sites(user):
+	"""Returns a set of sites available for the specified user. Each site 
 	is represented by an image in the 'images' directory. """
-	files=(file.replace('images/', '') for file in glob.glob('images/*'))
-	#files=set(glob.glob('images/*'))
+	files=()
+	if user.lower().endswith("ur"):
+		#ASSERT: the username indicates unrelated condition
+		files=(file.replace('images/', '') for file in glob.glob('images/ur_*'))
+	elif user.lower().endswith("r"):
+		#ASSERT: the username indicates related condition
+		files=(file.replace('images/', '') for file in glob.glob('images/r_*'))
 	return set(files)
 	
 def get_registered_sites(user,iteration):
@@ -125,9 +130,9 @@ def verify_site(user, site, password):
 	stored_pass = str(result.initial_password)
 	return stored_pass == password
 	
-def get_site_for_known_user(iteration, user):
+def get_site_for_user(iteration, user):
 	"""Returns the site for the specified user or '' of no such sites can be returned."""
-	possible_sites=get_possible_sites()
+	possible_sites=get_possible_sites(user)
 	last_site=memcache.get(user)
 	registered_sites=get_registered_sites(user,iteration)
 	registered_sites.add(last_site)
@@ -155,47 +160,44 @@ class ReportHandler(webapp2.RequestHandler):
 class AccountHandler(webapp2.RequestHandler):
 	
 	def get(self,iteration,attempt):
-		user=cgi.escape(self.request.get('user'))
+		user=cgi.escape(self.request.get('username'))
 		site=cgi.escape(self.request.get('site'))
-		possible_sites=get_possible_sites()		
-		try:
-			if user:
-				#ASSERT: We've seen this user before, get the list of sites
-				# that this user may need to setup
-				if site:
-					#ASSESRT: We know for which site to display the account info
-					selected_site = site
-				else:
-					#ASSERT: we need to figure out the site for the user and if
-					# such site does not exist, we need to go back to the main screen
-					selected_site=get_site_for_known_user(iteration, user)
-					if selected_site=="":
-						self.redirect('/')
-			else:
-				#ASSERT: We have not seen this user before. Provide a list
-				# of sites without any restrictions
-				selected_site=random.sample(possible_sites,1).pop()
+		
+		#TODO: Handle this more gracefully
+		if not user:
+			self.redirect('/')
 			
-			if int(iteration)==1 or int(iteration)==2:
-				# ASSERT: The user is going to verify the site's credentials
-				# thus, we need a different verification procedure
-				action="/verify"
-			elif int(iteration)==0:
-				#ASSERT: This is the user's first time, so we need to save the info
-				action="/save"
-			
-			template_values = {
-				'selected_site' : cgi.escape(selected_site),
-				'user': user,
-				'iteration': iteration,
-				'attempt': attempt,
-				'action': action,
-			}
-			
-			self.response.write(account_template.render(template_values))
-		except ValueError:
-				self.response.write(main_template.render())
-		pass
+		possible_sites=get_possible_sites(user)
+		
+		if site:
+			#ASSESRT: We know for which site to display the account info
+			selected_site = site
+		else:
+			#ASSERT: we need to figure out the site for the user and if
+			# such site does not exist, we need to go back to the main screen
+			selected_site=get_site_for_user(iteration, user)
+			if selected_site=="":
+				self.redirect('/')
+		
+		if int(iteration)==1 or int(iteration)==2:
+			# ASSERT: The user is going to verify the site's credentials
+			# thus, we need a different verification procedure
+			action="/verify"
+		elif int(iteration)==0:
+			#ASSERT: This is the user's first time, so we need to save the info
+			action="/save"
+		
+		template_values = {
+			'selected_site' : cgi.escape(selected_site),
+			'user': user,
+			'iteration': iteration,
+			'attempt': attempt,
+			'action': action,
+		}
+		
+		self.response.write(account_template.render(template_values))
+		
+	pass
 	
 	def save(self):
 		"""Saves the account credentials and redirects to the new account page."""
@@ -275,7 +277,6 @@ app = webapp2.WSGIApplication([
     webapp2.Route(r'/', handler=MainHandler),
 	webapp2.Route(r'/report', handler=ReportHandler),
 	webapp2.Route(r'/account/<iteration>/<attempt>/', handler=AccountHandler),
-	# webapp2.Route(r'/account/<iteration>/<attempt>/<user>', handler=AccountHandler, handler_method='handle_known_user'),
 	webapp2.Route(r'/save',   handler=AccountHandler, methods=['POST'], handler_method='save'),
 	webapp2.Route(r'/verify', handler=AccountHandler, methods=['POST'], handler_method='verify')
 ], debug=True)

@@ -37,7 +37,7 @@
 			<div class="form-group">
 				
 				<div class="col-md-12 clearfix">
-					<input type="text" class="form-control" id="user" name="user" placeholder="Username:" value="{{ user }}"/>
+					<input type="text" class="form-control" id="user" name="user" placeholder="Username:" value="{{ user }}" disabled/>
 				</div>
 			</div>
 		
@@ -84,17 +84,12 @@
 	
 	$(function() {
 		
-		var checkStoredPassword = function(){
-			
-		};
-		
 		$("#account").validate({
 			rules:{
 				user: "required",
 				pass1: "required",
 				pass1: { password: true },
 				pass2: { equalTo: "#pass1" },
-				pass2: { depends: checkStoredPassword},
 			},
 			messages:{
 				pass2: "Please ensure that both passwords are the same"
