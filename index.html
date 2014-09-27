@@ -52,13 +52,13 @@
 		<div class="well">
 			<div class="row">
 				<div class="col-md-12">
-					<a href="/account/0/1/" class="nav">Setup accounts</a></div>
-				<div class="col-md-12">
-					<a href="/account/1/1/" class="nav">Start 5 min follow-up</a></div>
-				<div class="col-md-12">
-					<a href="/account/2/1/" class="nav">Start 1 week follow-up</a></div>
-				<div class="col-md-12">
-					<a href="/report" >View data</a></div>
+					<ul class="nav nav-pills nav-stacked">
+						<li><a href="/account/0/1/" class="act">Setup accounts</a></li>
+						<li><a href="/account/1/1/" class="act">Start 5 min follow-up</a></li>
+						<li><a href="/account/2/1/" class="act">Start 1 week follow-up</a></li>
+						<li><a href="/report" >View data</a></li>
+					</ul>
+				</div>
 			</div>
 		</div>
 		
@@ -67,9 +67,8 @@
 	</body>
 	
 	<script type="text/javascript">
-
-
-	/* Ensures that the username matches the password criteria */
+	
+	// Ensures that the username matches the password criteria 
 	$.validator.addMethod("usernameIsValid", function(value,element) {
 		var word=/^[a-zA-Z0-9]+[r|ur]$/;
 		
@@ -79,8 +78,8 @@
 			$("#messages").addClass("alert");
 			$("#messages").addClass("alert-danger");
 			$("#messages").addClass("alert-dismmissible");	
-			$("#messages").append(button);		
-		}
+
+		} 
 		
 		return word.test(value.toLowerCase()); 
 		 
@@ -101,11 +100,9 @@
 			}
 		});
 	});
-	 
-	
 
 	/* Overrides default functionality onClick for the links */
-	$('.nav').click(function(e){
+	$('.act').click(function(e){
 		e.preventDefault();
 		var new_url=$(this).attr('href');
 		$("#userform").attr("action", new_url);

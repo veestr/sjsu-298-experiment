@@ -109,13 +109,11 @@
 		test = long.test(value) && number.test(value) &&  upper.test(value) && lower.test(value) &&  special.test(value);
 		
 		if (!test){
-			var button=$("<button type='button' class='close' data-dismiss='alert'><span aria-hidden='true'>&times;</span><span class='sr-only'>Close</span></button>");
-		
 			$("#messages").addClass("error");
 			$("#messages").addClass("alert");
 			$("#messages").addClass("alert-danger");	
 			$("#messages").addClass("alert-dismmissible");	
-			$("#messages").append(button);		
+				
 		}
 		return test;
 	}, "The password must be 8+ characters with numbers, upper and lower case letters, special characters.");

@@ -16,4 +16,9 @@ body {
 	display:block;
 }
 
+a.disabledAnchor{
+	pointer-events: none !important;
+	cursor: default;
+	color:Gray;
+}
 
