@@ -16,18 +16,4 @@ body {
 	display:block;
 }
 
-#user-error {
-	background: #ffdddd;
-	padding: 2px;
-}
-
-#pass1-error {
-	background: #ffdddd;
-	padding: 2px;
-}
-
-#pass2-error {
-	background: #ffdddd;
-	padding: 2px;
-}
 

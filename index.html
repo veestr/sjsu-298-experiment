@@ -26,17 +26,17 @@
 	<div class="10px-empty">&nbsp;</div>
 		<div class="container-fluid"> 
 		
+		<div class="well">	
 			<div class="row">
-				<div class="well">
-					<div class="col-md-12">
-						<form id="userform" name="userform" role="form" method="get">
-							<div class="form-group">
-								<input 
-									type="text" 
-									class="form-control input-lg" 
-									id="username" 
-									name="username"
-									placeholder="Username">
+				<div class="col-md-12">
+					<form id="userform" name="userform" role="form" method="get">
+						<div name="userinput" class="form-group">
+							<input 
+								type="text" 
+								class="form-control" 
+								id="username" 
+								name="username"
+								placeholder="Username. Must end with 'ur' or 'r', case insensitive.">
 						</div>
 					</form>
 				</div>
@@ -44,7 +44,13 @@
 		</div>
 		
 		<div class="row">
-			<div class="well">
+			<div class="col-md-12">
+				<div id="messages"></div>
+			</div>
+		</div>
+		
+		<div class="well">
+			<div class="row">
 				<div class="col-md-12">
 					<a href="/account/0/1/" class="nav">Setup accounts</a></div>
 				<div class="col-md-12">
@@ -55,27 +61,43 @@
 					<a href="/report" >View data</a></div>
 			</div>
 		</div>
+		
+		
 	</div>
 	</body>
 	
 	<script type="text/javascript">
 
+
 	/* Ensures that the username matches the password criteria */
-	$.validator.addMethod("username", function(value,element) {
-		var number = /\d+/;
-		var letters = /[A-Za-z]+/;
-		var end1 = /.+[rR]$/;
-		return number.test(value) && number.test(value) && end1.test();
-	}, "The username must contain letters and numbers and end with 'R' or 'UR'"
+	$.validator.addMethod("usernameIsValid", function(value,element) {
+		var word=/^[a-zA-Z0-9]+[r|ur]$/;
+		
+		if ( !word.test(value.toLowerCase()) ){
+			var button=$("<button type='button' class='close' data-dismiss='alert'><span aria-hidden='true'>&times;</span><span class='sr-only'>Close</span></button>");
+			$("#messages").addClass("error");
+			$("#messages").addClass("alert");
+			$("#messages").addClass("alert-danger");
+			$("#messages").addClass("alert-dismmissible");	
+			$("#messages").append(button);		
+		}
+		
+		return word.test(value.toLowerCase()); 
+		 
+		}, "The username must end with 'ur' or 'r', case insensitive."
 	);
 	
 	$(function() {	
 		$("#userform").validate({
+			errorLabelContainer: "#messages",
 			rules:{
-				username: "required",
+				username: { 
+					usernameIsValid: true, 
+				}
 			},
+			
 			messages:{
-				username: "Please use the name that ends with 'R' or 'UR' :-)"
+				username: "The username must end with 'ur' or 'r', case insensitive."
 			}
 		});
 	});

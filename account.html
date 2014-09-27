@@ -26,37 +26,56 @@
 	<div class="10px-empty">&nbsp;</div>
 	<div class="container-fluid">
 		
+		<div class="well">
 		<div class="row">
-			<div class="col-md-12 clearfix well well-small">
+			<div class="col-md-12 clearfix">
 				<img src="{{ selected_site }}">
 			</div>
 		</div>
+	</div>
 				  
 		<div class="row">		  
 		<form role="form" id="account" name="account" method="post" action="{{ action }}">
 			<div class="form-group">
 				
 				<div class="col-md-12 clearfix">
-					<input type="text" class="form-control" id="user" name="user" placeholder="Username:" value="{{ user }}" disabled/>
+					<input 
+						type="text" 
+						class="form-control" 
+						id="user" name="user" 
+						placeholder="Username:" value="{{ user }}" disabled/>
 				</div>
 			</div>
 		
 			<div class="form-group">
 				<div class="col-md-12">
-						<input type="password" class="form-control" id="pass1" name="pass1" placeholder="Password: 8+ characters with numbers, upper and lower case letters, special characters">
+						<input 
+							type="password" 
+							class="form-control" 
+							id="pass1" 
+							name="pass1" 
+							placeholder="Password: 8+ characters with numbers, upper and lower case letters, special characters">
 					</div>
 			</div>
 		
 			<div class="form-group">
 				<div class="col-md-12">
-				<input type="password" class="form-control" id="pass2" name="pass2" placeholder="Confirm password:">
+				<input 
+					type="password" 
+					class="form-control" 
+					id="pass2" 
+					name="pass2" 
+					placeholder="Confirm password:">
 				</div>
 			</div>
 		
 	
 			<div class="form-group">
 				<div class="col-md-12">
-					<button id="submit" class="btn btn-primary btn-larg btn-block">Save and continue</button>
+					<button 
+						id="submit" 
+						class="btn btn-primary btn-larg btn-block">Save and continue
+					</button>
 				</div>
 			</div>
 		
@@ -66,6 +85,13 @@
 			</form>
 			
 		</div>
+		
+		<div class="row">
+			<div class="col-md-12">
+				<div id="messages"></div>
+			</div>
+		</div>
+		
 	</div>
 </div>
 </body>
@@ -79,15 +105,27 @@
 		var upper = /[A-Z]+/;
 		var lower = /[a-z]+/;
 		var special = /[^\w\d]+/;
-		return long.test(value) && number.test(value) && upper.test(value) && lower.test(value) && special.test(value);
+		
+		test = long.test(value) && number.test(value) &&  upper.test(value) && lower.test(value) &&  special.test(value);
+		
+		if (!test){
+			var button=$("<button type='button' class='close' data-dismiss='alert'><span aria-hidden='true'>&times;</span><span class='sr-only'>Close</span></button>");
+		
+			$("#messages").addClass("error");
+			$("#messages").addClass("alert");
+			$("#messages").addClass("alert-danger");	
+			$("#messages").addClass("alert-dismmissible");	
+			$("#messages").append(button);		
+		}
+		return test;
 	}, "The password must be 8+ characters with numbers, upper and lower case letters, special characters.");
 	
 	$(function() {
 		
 		$("#account").validate({
+			errorLabelContainer: "#messages",
 			rules:{
 				user: "required",
-				pass1: "required",
 				pass1: { password: true },
 				pass2: { equalTo: "#pass1" },
 			},
