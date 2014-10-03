@@ -1,7 +1,15 @@
 sjsu-298-experiment
 ===================
 
+GENERAL INFO
+
 This is an alpha code created for an experiment at San Jose State University. This is an extremely early version of the product, so please reach out to me if you see something that you like and I will make it presentable for forking.
+
+DEPENDENCIES
+
+Bootstrap
+iQuery
+Google App Engine
 
 Carry on!
 -veestr
