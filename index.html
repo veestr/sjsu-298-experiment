@@ -34,8 +34,8 @@
 							<input 
 								type="text" 
 								class="form-control" 
-								id="username" 
-								name="username"
+								id="user" 
+								name="user"
 								placeholder="Username. Must end with 'ur' or 'r', case insensitive.">
 						</div>
 					</form>
@@ -90,13 +90,13 @@
 		$("#userform").validate({
 			errorLabelContainer: "#messages",
 			rules:{
-				username: { 
+				user: { 
 					usernameIsValid: true, 
 				}
 			},
 			
 			messages:{
-				username: "The username must end with 'ur' or 'r', case insensitive."
+				user: "The username must end with 'ur' or 'r', case insensitive."
 			}
 		});
 	});

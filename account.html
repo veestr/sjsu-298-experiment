@@ -42,7 +42,8 @@
 					<input 
 						type="text" 
 						class="form-control" 
-						id="user" name="user" 
+						id="displayed_user" 
+						name="displayed_user" 
 						placeholder="Username:" value="{{ user }}" disabled/>
 				</div>
 			</div>
@@ -82,6 +83,7 @@
 			<input type="hidden" name="site" value="{{ selected_site }}"/>
 			<input type="hidden" name="iteration" value="{{ iteration }}">
 			<input type="hidden" name="attempt" value="{{ attempt }}">
+			<input type="hidden" name="user" value="{{ user }}">
 			</form>
 			
 		</div>
@@ -118,6 +120,19 @@
 		return test;
 	}, "The password must be 8+ characters with numbers, upper and lower case letters, special characters.");
 	
+	/* Ensures that the second password is equal to the first password */
+	$.validator.addMethod("secondPassIsValid", function(value,element) {
+		if ( $("#pass1").val()==$("#pass2").val()){
+			return true;
+		} else {
+			$("#messages").addClass("error");
+			$("#messages").addClass("alert");
+			$("#messages").addClass("alert-danger");	
+			$("#messages").addClass("alert-dismmissible");	
+			return false;
+		}
+	}, "Please ensure that the passwords are equal.");
+	
 	$(function() {
 		
 		$("#account").validate({
@@ -125,11 +140,8 @@
 			rules:{
 				user: "required",
 				pass1: { password: true },
-				pass2: { equalTo: "#pass1" },
+				pass2: { secondPassIsValid: true},
 			},
-			messages:{
-				pass2: "Please ensure that both passwords are the same"
-			}
 		}); 
 	});
   

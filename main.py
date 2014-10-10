@@ -137,7 +137,9 @@ def get_site_for_user(iteration, user):
 	registered_sites=get_registered_sites(user,iteration)
 	registered_sites.add(last_site)
 	allowed_sites=possible_sites.difference(registered_sites)
-	print registered_sites, possible_sites
+	print "Registred sites: %s" % registered_sites
+	print "Possible sites: %s" % possible_sites
+	print "Allowed sites: %s"  % allowed_sites
 	if len(allowed_sites) > 0:
 		return random.sample(allowed_sites, 1).pop()
 	else:
@@ -160,7 +162,7 @@ class ReportHandler(webapp2.RequestHandler):
 class AccountHandler(webapp2.RequestHandler):
 	
 	def get(self,iteration,attempt):
-		user=cgi.escape(self.request.get('username'))
+		user=cgi.escape(self.request.get('user'))
 		site=cgi.escape(self.request.get('site'))
 		
 		#TODO: Handle this more gracefully
@@ -202,6 +204,7 @@ class AccountHandler(webapp2.RequestHandler):
 	def save(self):
 		"""Saves the account credentials and redirects to the new account page."""
 		user=cgi.escape(self.request.get('user'))
+		print "user in save(): %s" % user
 		password=cgi.escape(self.request.get('pass1'))
 		site=cgi.escape(self.request.get('site'))
 		iteration=int(cgi.escape(self.request.get('iteration')))
